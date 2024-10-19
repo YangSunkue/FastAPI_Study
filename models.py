@@ -10,4 +10,3 @@ class Users(Base):
     id = Column(String(100), primary_key=True, nullable=False) # id 필드
     pw = Column(String(2000), nullable=False) # pw 필드
     nickname = Column(String(20), unique=True, nullable=False) #nickname 필드
-
