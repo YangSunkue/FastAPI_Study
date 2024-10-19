@@ -7,7 +7,13 @@ class Item(BaseModel):
     price: float
     isOffer: bool = None # 기본값은 None이며 필수 입력값이 아님
 
-# 로그인 요청
+# 로그인 요청 데이터
 class LoginRequest(BaseModel):
-    username: str
+    userName: str
     password: str
+
+# 회원가입 요청 데이터
+class SignUpRequest(BaseModel):
+    userName: str
+    password: str
+    nickName: str
