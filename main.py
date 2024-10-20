@@ -3,6 +3,8 @@ from typing import Union # 여러개의 데이터타입 허용
 from fastapi import FastAPI, Depends, HTTPException # FastAPI, 의존성주입, HTTP오류처리 가져오기
 from fastapi.responses import JSONResponse # JSON 응답
 from datetime import datetime, timedelta, timezone # 시간 관련 모듈
+from dotenv import load_dotenv # 환경변수 모듈
+import os # 환경변수 가져오기 위한 클래스
 import hashlib # 해시함수
 import jwt # JWT
 
@@ -17,21 +19,22 @@ from db import EngineConn # db연결 클래스 가져오기
 from models import Users # db 매핑 테이블 가져오기
 from schemas import Item, LoginRequest, SignUpRequest # 데이터 스키마 가져오기
 
-app = FastAPI()
-
-# DB 인스턴스 생성 및 생성자를 통한 DB엔진 초기화
-engine = EngineConn()
-
-# JWT 관련 , 환경변수로 빼야 한다
-SecretKey = "qpsxmffl"
-Algorithm = "HS256"
-AccessTokenExpireMinutes = 1440
+#####################################################################################
 
 # POST : 데이터 생성 및 전달 (create)
 # GET : 데이터 조회 (read)
 # PUT : 데이터 업데이트 (update)
 # DELETE : 데이터 삭제 (delete)
 # 인자 인식 순서 : 경로, 파라미터, body, Depends
+
+app = FastAPI() # FastAPI 사용
+engine = EngineConn() # DB 인스턴스 생성 및 생성자를 통한 DB엔진 초기화
+
+# .env 파일 환경변수 로드
+load_dotenv()
+SecretKey = os.getenv("SecretKey")
+Algorithm = os.getenv("Algorithm")
+AccessTokenExpireMinutes = int(os.getenv("AccessTokenExpireMinutes", 60))
 
 # 로그인
 @app.post("/login")

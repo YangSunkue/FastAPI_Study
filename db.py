@@ -1,8 +1,11 @@
 from sqlalchemy import *
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
+from dotenv import load_dotenv
+import os
 
-DB_URL = "mysql+aiomysql://root:0000@localhost:3306/practice"
+load_dotenv()
+DB_URL = os.getenv("DB_URL")
 
 class EngineConn:
 
