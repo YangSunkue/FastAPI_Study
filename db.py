@@ -15,7 +15,7 @@ class EngineConn:
         self.MyAsyncSession = sessionmaker(bind=self.engine, class_=AsyncSession, expire_on_commit=False) # 비동기 세션 클래스 반환(아직 인스턴스 아님)
 
     # ORM 방식 비동기 세션 생성
-    async def createSession(self):
+    async def create_session(self):
         async with self.MyAsyncSession() as session: # MyAsyncSession으로 생성된 세션을 session에 할당함
             yield session
             # yield + Depends 합쳐서 사용할 경우에만 자동 세션 정리

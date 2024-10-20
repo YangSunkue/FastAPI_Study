@@ -5,15 +5,20 @@ from pydantic import BaseModel # 데이터관리를 위한 클래스 가져오�
 class Item(BaseModel):
     name: str
     price: float
-    isOffer: bool = None # 기본값은 None이며 필수 입력값이 아님
+    is_offer: bool = None # 기본값은 None이며 필수 입력값이 아님
 
 # 로그인 요청 데이터
 class LoginRequest(BaseModel):
-    userName: str
+    username: str
     password: str
 
 # 회원가입 요청 데이터
 class SignUpRequest(BaseModel):
-    userName: str
+    username: str
     password: str
-    nickName: str
+    nickname: str
+
+# 글 작성 요청 데이터
+class CreateArticleRequest(BaseModel):
+    title: str
+    content: str
