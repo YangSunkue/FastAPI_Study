@@ -2,7 +2,9 @@
 from typing import Union # 여러개의 데이터타입 허용
 from fastapi import FastAPI, Depends, HTTPException # FastAPI, 의존성주입, HTTP오류처리 가져오기
 from fastapi.responses import JSONResponse # JSON 응답
+from datetime import datetime, timedelta, timezone # 시간 관련 모듈
 import hashlib # 해시함수
+import jwt # JWT
 
 # sqlalchemy
 from sqlalchemy.ext.asyncio import AsyncSession # 비동기 SQLAlchemy 세션 사용을 위한 클래스 가져오기
@@ -20,25 +22,16 @@ app = FastAPI()
 # DB 인스턴스 생성 및 생성자를 통한 DB엔진 초기화
 engine = EngineConn()
 
+# JWT 관련 , 환경변수로 빼야 한다
+SecretKey = "qpsxmffl"
+Algorithm = "HS256"
+AccessTokenExpireMinutes = 1440
+
 # POST : 데이터 생성 및 전달 (create)
 # GET : 데이터 조회 (read)
 # PUT : 데이터 업데이트 (update)
 # DELETE : 데이터 삭제 (delete)
 # 인자 인식 순서 : 경로, 파라미터, body, Depends
-
-@app.get("/test")
-async def test(db: AsyncSession = Depends(engine.createSession)):
-    try:
-        query = select(Users)
-        re = await db.execute(query)
-        result = re.scalars().all()
-        userData = [{"id" : user.id, "pw" : user.pw, "nickname" : user.nickname} for user in result]
-
-        return JSONResponse(content={"userData" : userData}, status_code=200) # 일반적인 응답
-    
-    except Exception as error:
-        print(f"An error occurred: {error}")
-        raise HTTPException(status_code=500, detail="Internal Server Error") # 에러 상황의 응답
 
 # 로그인
 @app.post("/login")
@@ -61,9 +54,20 @@ async def login(loginData: LoginRequest,
             raise HTTPException(status_code=401, detail="Incorrect password")
         
         # JWT Access Token 발급
+        expiration = datetime.now(timezone.utc) + timedelta(minutes=AccessTokenExpireMinutes)
+        tokenData = {
+            "sub" : loginData.userName,
+            "exp" : expiration
+        }
+        accessToken = jwt.encode(tokenData, SecretKey, algorithm=Algorithm)
         
         # 로그인 성공
-        return JSONResponse(content={"message" : "Logged in successfully", "userId" : loginData.userName}, status_code=200)
+        return JSONResponse(content={
+            "message" : "Logged in successfully",
+            "userId" : loginData.userName,
+            "accessToken" : accessToken
+            },
+            status_code=200)
 
     except Exception as error:
         # HTTPException일 경우 그대로 반환
@@ -122,6 +126,22 @@ async def signUp(signUpData: SignUpRequest,
         print(f"An error occurred: {error}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
+
+
+
+@app.get("/test")
+async def test(db: AsyncSession = Depends(engine.createSession)):
+    try:
+        query = select(Users)
+        re = await db.execute(query)
+        result = re.scalars().all()
+        userData = [{"id" : user.id, "pw" : user.pw, "nickname" : user.nickname} for user in result]
+
+        return JSONResponse(content={"userData" : userData}, status_code=200) # 일반적인 응답
+    
+    except Exception as error:
+        print(f"An error occurred: {error}")
+        raise HTTPException(status_code=500, detail="Internal Server Error") # 에러 상황의 응답
 
 @app.get("/")
 async def readRoot():
