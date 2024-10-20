@@ -13,7 +13,6 @@ import jwt # JWT
 from sqlalchemy.ext.asyncio import AsyncSession # 비동기 SQLAlchemy 세션 사용을 위한 클래스 가져오기
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select # 비동기 select 쿼리
-from sqlalchemy import insert # 비동기 insert 쿼리
 
 # 파일 import
 from db import EngineConn # db연결 클래스 가져오기
@@ -160,7 +159,7 @@ async def login(login_data: LoginRequest,
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
-# 글쓰기
+# 게시글 작성
 @app.post("/api/articles")
 async def create_article(create_article_data: CreateArticleRequest,
     current_user: Dict[str, str] = Depends(verify_token_and_get_user),
@@ -201,6 +200,48 @@ async def create_article(create_article_data: CreateArticleRequest,
         print(f"An error occurred: {error}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
+
+# 게시글 수정
+@app.put("/api/articles/{article_id}")
+async def update_article(
+    article_id: int,
+    update_article_data: CreateArticleRequest,
+    current_user: Dict[str, str] = Depends(verify_token_and_get_user),
+    db: AsyncSession = Depends(engine.create_session)):
+
+    try:
+        # 게시글 존재 여부 확인
+        article = await db.get(Articles, article_id)
+
+        if article is None:
+            raise HTTPException(status_code=404, detail="Article not found")
+
+        # 작성자 본인인지 확인
+        if article.author_id != current_user.get("username") or article.author_nickname != current_user.get("nickname"):
+            raise HTTPException(status_code=403, detail="You don't have permission to update this article")
+
+        # 수정 시간 계산
+        kst = timezone(timedelta(hours=9))
+        updated_at = datetime.now(kst)
+
+        # 게시글 업데이트
+        article.title = update_article_data.title
+        article.content = update_article_data.content
+        article.updated_at = updated_at
+
+        # 변경사항 커밋
+        await db.commit()
+
+        return JSONResponse(content={"message" : "Article updated successfully", "article_id" : article_id}, status_code=200)
+
+
+    except Exception as error:
+        if isinstance(error, HTTPException):
+            raise error
+        
+        await db.rollback()
+        print(f"An error occurred: {error}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 

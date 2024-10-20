@@ -18,7 +18,7 @@ class SignUpRequest(BaseModel):
     password: str
     nickname: str
 
-# 글 작성 요청 데이터
+# 글 작성/수정 요청 데이터
 class CreateArticleRequest(BaseModel):
     title: str
     content: str

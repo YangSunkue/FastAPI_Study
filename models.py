@@ -23,6 +23,7 @@ class Articles(Base):
     author_nickname = Column(String(20), nullable=False)
     created_at = Column(TIMESTAMP, server_default="CURRENT_TIMESTAMP", nullable=True)
     author_id = Column(String(100), nullable=False)
+    updated_at = Column(TIMESTAMP, nullable=True)
 
     def __repr__(self):
         return f"<Article(id={self.id}, title={self.title}, author_nickname={self.author_nickname}, created_at={self.created_at}, author_id={self.author_id})>"
