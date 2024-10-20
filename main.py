@@ -187,7 +187,7 @@ async def create_article(create_article_data: CreateArticleRequest,
 
         # 글쓰기 성공
         if new_article.id:
-            return JSONResponse(content={"message" : "Article created successfully", "article_id" : new_article.id})
+            return JSONResponse(content={"message" : "Article created successfully", "article_id" : new_article.id}, status_code=201)
         # 글쓰기 실패
         else:
             raise HTTPException(status_code=500, detail="Article creation failed")
