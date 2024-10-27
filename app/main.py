@@ -15,9 +15,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select # 비동기 select 쿼리
 
 # 파일 import
-from db import EngineConn # db연결 클래스 가져오기
-from models import Users, Articles # db 매핑 테이블 가져오기
-from schemas import Item, LoginRequest, SignUpRequest, CreateArticleRequest # 데이터 스키마 가져오기
+from app.core.db import get_session # db연결 함수 가져오기
+from app.models.models import Users, Articles # db 매핑 테이블 가져오기
+from app.schemas.request.schemas import Item, LoginRequest, SignUpRequest, CreateArticleRequest # 데이터 스키마 가져오기
 
 #####################################################################################
 
@@ -28,7 +28,7 @@ from schemas import Item, LoginRequest, SignUpRequest, CreateArticleRequest # �
 # 인자 인식 순서 : 경로, 파라미터, body, Depends
 
 app = FastAPI() # FastAPI 사용
-engine = EngineConn() # DB 인스턴스 생성 및 생성자를 통한 DB엔진 초기화
+# engine = EngineConn() # DB 인스턴스 생성 및 생성자를 통한 DB엔진 초기화
 security = HTTPBearer() # JWT Access Token을 Bearer토큰 자동 인식하여 가져오기, HTTPAuthorizationCredentials 인스턴스 형태이다.
 
 # .env 파일 환경변수 로드
@@ -65,8 +65,10 @@ async def verify_token_and_get_user(credentials: HTTPAuthorizationCredentials = 
 
 # 회원가입
 @app.post("/api/sign_up")
-async def sign_up(sign_up_data: SignUpRequest,
-    db: AsyncSession = Depends(engine.create_session)):
+async def sign_up(
+    sign_up_data: SignUpRequest,
+    db: AsyncSession = Depends(get_session)
+):
     
     try:
         # 아이디 중복검사
@@ -113,8 +115,10 @@ async def sign_up(sign_up_data: SignUpRequest,
 
 # 로그인
 @app.post("/api/login")
-async def login(login_data: LoginRequest,
-    db: AsyncSession = Depends(engine.create_session)):
+async def login(
+    login_data: LoginRequest,
+    db: AsyncSession = Depends(get_session)
+):
 
     try:
         # 유저정보 조회
@@ -161,9 +165,11 @@ async def login(login_data: LoginRequest,
 
 # 게시글 작성
 @app.post("/api/articles")
-async def create_article(create_article_data: CreateArticleRequest,
+async def create_article(
+    create_article_data: CreateArticleRequest,
     current_user: Dict[str, str] = Depends(verify_token_and_get_user),
-    db: AsyncSession = Depends(engine.create_session)):
+    db: AsyncSession = Depends(get_session)
+):
 
     try:
         # 작성시간 계산 (한국 표준시)
@@ -207,7 +213,8 @@ async def update_article(
     article_id: int,
     update_article_data: CreateArticleRequest,
     current_user: Dict[str, str] = Depends(verify_token_and_get_user),
-    db: AsyncSession = Depends(engine.create_session)):
+    db: AsyncSession = Depends(get_session)
+):
 
     try:
         # 게시글 존재 여부 확인
@@ -247,30 +254,47 @@ async def update_article(
 
 
 @app.get("/test")
-async def test(db: AsyncSession = Depends(engine.create_session)):
+async def test(db: AsyncSession = Depends(get_session)):
 
     try:
-        query = select(Users)
-        re = await db.execute(query)
-        result = re.scalars().all()
-        user_data = [{"id" : user.id, "pw" : user.pw, "nickname" : user.nickname} for user in result]
-
-        return JSONResponse(content={"user_data" : user_data}, status_code=200) # 일반적인 응답
+        # 명시적인 트랜잭션 시작
+        async with db.begin():
+            # 쿼리 실행
+            result = await db.execute(select(Users))
+            users = result.scalars().all()
+            
+            # 결과 변환
+            user_data = [
+                {
+                    "id": user.id,
+                    "pw": user.pw,
+                    "nickname": user.nickname
+                } 
+                for user in users
+            ]
+            
+            return JSONResponse(
+                content={"user_data": user_data}, 
+                status_code=200
+            )
     
     except Exception as error:
         print(f"An error occurred: {error}")
-        raise HTTPException(status_code=500, detail="Internal Server Error") # 에러 상황의 응답
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Internal Server Error: {str(error)}"
+        )
 
 @app.get("/")
 async def read_root():
     return {"Hello" : "World"}
 
 # FastAPI는 입력된 값을 지정된 자료형으로 변환된다.
-@app.get("/items/{itemId}")
+@app.get("/items/{item_id}")
 async def read_item(item_id : int, q : Union[str, None] = None):
     return {"item_id" : item_id, "q" : q}
 
 # update하므로 put
-@app.put("/items/{itemId}")
+@app.put("/items/{item_id}")
 async def update_item(item_id : int, item : Item):
     return {"item_price" : item.price, "item_id" : item_id}

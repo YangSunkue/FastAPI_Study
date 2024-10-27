@@ -1,5 +1,7 @@
 from pydantic import BaseModel # 데이터관리를 위한 클래스 가져오기
 
+# Request DTO
+
 # BaseModel클래스를 상속받아 데이터 관리
 # 1개의 클래스로 3개의 데이터를 사용자로부터 입력받는다
 class Item(BaseModel):
